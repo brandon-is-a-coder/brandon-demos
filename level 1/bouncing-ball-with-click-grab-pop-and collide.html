@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Bouncing Balls with Collisions</title>
+    <style>
+        svg {
+            width: 100%;
+            height: 500px;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <svg id="svgBox"></svg>
+
+    <script>
+        const svgBox = document.getElementById('svgBox');
+        const balls = [];
+        const radius = 20;
+        let selectedBall = null;
+        let lastMouseX = null;
+        let lastMouseY = null;
+        let movementThreshold = 5; // Minimum movement required to consider it a drag
+        let hasMovedEnough = false;
+
+        svgBox.addEventListener('mousedown', (event) => {
+            hasMovedEnough = false;
+            balls.forEach(ball => {
+                if (isPointInCircle(event.offsetX, event.offsetY, parseFloat(ball.getAttribute('cx')), parseFloat(ball.getAttribute('cy')), radius)) {
+                    selectedBall = ball;
+                    lastMouseX = event.offsetX;
+                    lastMouseY = event.offsetY;
+                    event.preventDefault(); // Prevents the drag from being considered as a click
+                }
+            });
+            if (!selectedBall) {
+                const newBall = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                newBall.setAttribute("cx", event.offsetX);
+                newBall.setAttribute("cy", event.offsetY);
+                newBall.setAttribute("r", radius);
+                newBall.setAttribute("fill", `hsl(${Math.random() * 360}, 100%, 50%)`);
+                newBall.velocity = {x: 0, y: 0};
+                svgBox.appendChild(newBall);
+                balls.push(newBall);
+                selectedBall = newBall;
+            }
+        });
+
+        document.addEventListener('mousemove', (event) => {
+            if (selectedBall) {
+                const dx = event.offsetX - lastMouseX;
+                const dy = event.offsetY - lastMouseY;
+                if (Math.abs(dx) > movementThreshold || Math.abs(dy) > movementThreshold) {
+                    hasMovedEnough = true;
+                }
+                selectedBall.setAttribute('cx', event.offsetX);
+                selectedBall.setAttribute('cy', event.offsetY);
+                selectedBall.velocity.x = dx;
+                selectedBall.velocity.y = dy;
+                lastMouseX = event.offsetX;
+                lastMouseY = event.offsetY;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (selectedBall && hasMovedEnough) {
+                selectedBall = null;
+                hasMovedEnough = false;
+            }
+        });
+
+        function moveBalls() {
+            balls.forEach(ball => {
+                let xPosition = parseFloat(ball.getAttribute('cx'));
+                let yPosition = parseFloat(ball.getAttribute('cy'));
+                xPosition += ball.velocity.x;
+                yPosition += ball.velocity.y;
+
+                if (xPosition <= radius || xPosition >= svgBox.clientWidth - radius) {
+                    ball.velocity.x = -ball.velocity.x;
+                }
+                if (yPosition <= radius || yPosition >= svgBox.clientHeight - radius) {
+                    ball.velocity.y = -ball.velocity.y;
+                }
+
+                ball.setAttribute('cx', xPosition);
+                ball.setAttribute('cy', yPosition);
+
+                // Collision detection
+                balls.forEach(other => {
+                    if (other !== ball && isColliding(ball, other)) {
+                        handleCollision(ball, other);
+                    }
+                });
+            });
+        }
+
+        setInterval(moveBalls, 10);
+
+        function isPointInCircle(x, y, cx, cy, radius) {
+            return (x - cx) ** 2 + (y - cy) ** 2 <= radius * radius;
+        }
+
+        function isColliding(ball1, ball2) {
+            const dx = parseFloat(ball1.getAttribute('cx')) - parseFloat(ball2.getAttribute('cx'));
+            const dy = parseFloat(ball1.getAttribute('cy')) - parseFloat(ball2.getAttribute('cy'));
+            return (dx * dx + dy * dy) < (4 * radius * radius); // (2 * radius) ^ 2 because each ball has a radius and we compare the centers
+        }
+
+        function handleCollision(ball1, ball2) {
+            // Simple physics for bouncing balls off each other
+            let in1 = {x: ball1.velocity.x, y: ball1.velocity.y};
+            let in2 = {x: ball2.velocity.x, y: ball2.velocity.y};
+
+            ball1.velocity.x = in2.x*-1;
+            ball1.velocity.y = in2.y*-1;
+            ball2.velocity.x = in1.x*-1;
+            ball2.velocity.y = in1.y*-1;
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.code === "Space") {
+                balls.forEach((ball, index) => {
+                    ball.velocity.x = (Math.random()*50)+10
+                    ball.velocity.y = (Math.random()*50)+10;
+                });
+            }
+        });
+    </script>
+</body>
+</html>
