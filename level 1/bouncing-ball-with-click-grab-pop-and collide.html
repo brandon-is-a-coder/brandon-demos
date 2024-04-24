@@ -19,6 +19,7 @@
         const svgBox = document.getElementById('svgBox');
         const balls = [];
         const radius = 20;
+        let frame = 0;
         let selectedBall = null;
         let lastMouseX = null;
         let lastMouseY = null;
@@ -36,15 +37,7 @@
                 }
             });
             if (!selectedBall) {
-                const newBall = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                newBall.setAttribute("cx", event.offsetX);
-                newBall.setAttribute("cy", event.offsetY);
-                newBall.setAttribute("r", radius);
-                newBall.setAttribute("fill", `hsl(${Math.random() * 360}, 100%, 50%)`);
-                newBall.velocity = {x: 0, y: 0};
-                svgBox.appendChild(newBall);
-                balls.push(newBall);
-                selectedBall = newBall;
+                selectedBall = addBall(event.offsetX, event.offsetY);
             }
         });
 
@@ -72,17 +65,37 @@
         });
 
         function moveBalls() {
+            frame = (frame+1) %1000;
+            if(frame === 0) {
+                console.log(balls);
+            }
+            
             balls.forEach(ball => {
                 let xPosition = parseFloat(ball.getAttribute('cx'));
                 let yPosition = parseFloat(ball.getAttribute('cy'));
+
                 xPosition += ball.velocity.x;
                 yPosition += ball.velocity.y;
 
-                if (xPosition <= radius || xPosition >= svgBox.clientWidth - radius) {
+                if (xPosition >= svgBox.clientWidth - radius) {
                     ball.velocity.x = -ball.velocity.x;
+                    xPosition = svgBox.clientWidth - radius
                 }
-                if (yPosition <= radius || yPosition >= svgBox.clientHeight - radius) {
+
+                
+                if (xPosition <= radius) {
+                    ball.velocity.x = -ball.velocity.x;
+                    xPosition = radius;
+                }
+
+                if (yPosition >= svgBox.clientHeight - radius) {
                     ball.velocity.y = -ball.velocity.y;
+                    yPosition = svgBox.clientHeight - radius;
+                }
+
+                if (yPosition <= radius) {
+                    ball.velocity.y = -ball.velocity.y;
+                    yPosition = radius;
                 }
 
                 ball.setAttribute('cx', xPosition);
@@ -120,12 +133,29 @@
             ball2.velocity.y = in1.y*-1;
         }
 
+        function addBall(x, y) {
+            const newBall = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            newBall.setAttribute("cx", x);
+            newBall.setAttribute("cy", y);
+            newBall.setAttribute("r", radius);
+            newBall.setAttribute("fill", `hsl(${Math.random() * 360}, 100%, 50%)`);
+            newBall.velocity = {x: 0, y: 0};
+            svgBox.appendChild(newBall);
+            balls.push(newBall);
+            return newBall
+        }
+
         document.addEventListener('keydown', (event) => {
+            console.log(event);
             if (event.code === "Space") {
                 balls.forEach((ball, index) => {
                     ball.velocity.x = (Math.random()*50)+10
                     ball.velocity.y = (Math.random()*50)+10;
                 });
+            } else if (event.key === 'n') {
+                let newBall = addBall(Math.random() * 100, Math.random() * 100);
+                newBall.velocity.x = Math.random() * 50;
+                newBall.velocity.y = Math.random() * 30;
             }
         });
     </script>
