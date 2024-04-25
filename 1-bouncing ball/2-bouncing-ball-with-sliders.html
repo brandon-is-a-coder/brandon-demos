@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bouncing Ball Animation with Control</title>
+    <style>
+        svg {
+            width: 100%;
+            height: 500px;
+            border: 1px solid black;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <svg id="svgBox">
+        <circle id="ball" cx="50" cy="50" r="20" fill="red" />
+    </svg>
+    <div class="controls">
+        <label for="xVelocity">X Velocity:</label>
+        <input type="range" id="xVelocity" min="-10" max="10" value="2">
+        <label for="yVelocity">Y Velocity:</label>
+        <input type="range" id="yVelocity" min="-10" max="10" value="2">
+        <p>Current Position: <span id="positionDisplay">(50, 50)</span></p>
+    </div>
+
+    <script>
+        const svgBox = document.getElementById('svgBox');
+        const ball = document.getElementById('ball');
+        const positionDisplay = document.getElementById('positionDisplay');
+        let xPosition = 50;
+        let yPosition = 50;
+        let xVelocity = 2;
+        let yVelocity = 2;
+        const radius = 20;
+
+        document.getElementById('xVelocity').oninput = function() {
+            xVelocity = parseInt(this.value);
+        };
+        document.getElementById('yVelocity').oninput = function() {
+            yVelocity = parseInt(this.value);
+        };
+
+        function moveBall() {
+            xPosition += xVelocity;
+            yPosition += yVelocity;
+            
+            if (xPosition <= radius || xPosition >= svgBox.clientWidth - radius) {
+                xVelocity = -xVelocity;
+            }
+            if (yPosition <= radius || yPosition >= svgBox.clientHeight - radius) {
+                yVelocity = -yVelocity;
+            }
+
+            ball.setAttribute('cx', xPosition);
+            ball.setAttribute('cy', yPosition);
+            positionDisplay.textContent = `(${xPosition.toFixed(1)}, ${yPosition.toFixed(1)})`;
+        }
+
+        setInterval(moveBall, 10); // Update the ball's position every 10 milliseconds
+    </script>
+</body>
+</html>

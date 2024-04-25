@@ -6,7 +6,7 @@
     <title>Interactive Bouncing Balls with Collisions</title>
     <style>
         svg {
-            width: 100%;
+            width: 500px;
             height: 500px;
             border: 1px solid black;
         }
@@ -19,7 +19,6 @@
         const svgBox = document.getElementById('svgBox');
         const balls = [];
         const radius = 20;
-        let frame = 0;
         let selectedBall = null;
         let lastMouseX = null;
         let lastMouseY = null;
@@ -37,7 +36,7 @@
                 }
             });
             if (!selectedBall) {
-                selectedBall = addBall(event.offsetX, event.offsetY);
+                selectedBall = addBall(event.offsetX, event.offsetY, 0, 0);
             }
         });
 
@@ -65,10 +64,6 @@
         });
 
         function moveBalls() {
-            frame = (frame+1) %1000;
-            if(frame === 0) {
-                console.log(balls);
-            }
             
             balls.forEach(ball => {
                 let xPosition = parseFloat(ball.getAttribute('cx'));
@@ -100,14 +95,16 @@
 
                 ball.setAttribute('cx', xPosition);
                 ball.setAttribute('cy', yPosition);
-
-                // Collision detection
-                balls.forEach(other => {
-                    if (other !== ball && isColliding(ball, other)) {
-                        handleCollision(ball, other);
-                    }
-                });
             });
+
+            // Now handle collisions in a separate loop to reduce redundant checks
+            for (let i = 0; i < balls.length; i++) {
+                for (let j = i + 1; j < balls.length; j++) {
+                    if (isColliding(balls[i], balls[j])) {
+                        handleCollision(balls[i], balls[j]);
+                    }
+                }
+            }
         }
 
         setInterval(moveBalls, 10);
@@ -123,39 +120,56 @@
         }
 
         function handleCollision(ball1, ball2) {
-            // Simple physics for bouncing balls off each other
-            let in1 = {x: ball1.velocity.x, y: ball1.velocity.y};
-            let in2 = {x: ball2.velocity.x, y: ball2.velocity.y};
+            // Calculate the difference in positions
+            let dx = parseFloat(ball2.getAttribute('cx')); - parseFloat(ball1.getAttribute('cx'));;
+            let dy = parseFloat(ball2.getAttribute('cy')); - parseFloat(ball1.getAttribute('cy'));;
 
-            ball1.velocity.x = in2.x*-1;
-            ball1.velocity.y = in2.y*-1;
-            ball2.velocity.x = in1.x*-1;
-            ball2.velocity.y = in1.y*-1;
+            // Distance between balls
+            let distance = Math.sqrt(dx * dx + dy * dy);
+
+            // Normalizing the difference in positions
+            let nx = dx / distance;
+            let ny = dy / distance;
+
+            // Decompose velocities into normal and tangential components
+            let v1n = ball1.velocity.x * nx + ball1.velocity.y * ny;
+            let v1t = -ball1.velocity.x * ny + ball1.velocity.y * nx;
+            
+            let v2n = ball2.velocity.x * nx + ball2.velocity.y * ny;
+            let v2t = -ball2.velocity.x * ny + ball2.velocity.y * nx;
+
+            // Exchange normal components for elastic collision
+            let temp = v1n;
+            v1n = v2n;
+            v2n = temp;
+
+            // Convert back to original coordinate system
+            ball1.velocity.x = v1n * nx - v1t * ny;
+            ball1.velocity.y = v1n * ny + v1t * nx;
+            ball2.velocity.x = v2n * nx - v2t * ny;
+            ball2.velocity.y = v2n * ny + v2t * nx;
         }
 
-        function addBall(x, y) {
+        function addBall(x, y, vx, vy) {
             const newBall = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             newBall.setAttribute("cx", x);
             newBall.setAttribute("cy", y);
             newBall.setAttribute("r", radius);
             newBall.setAttribute("fill", `hsl(${Math.random() * 360}, 100%, 50%)`);
-            newBall.velocity = {x: 0, y: 0};
+            newBall.velocity = {x: vx, y: vy};
             svgBox.appendChild(newBall);
             balls.push(newBall);
             return newBall
         }
 
         document.addEventListener('keydown', (event) => {
-            console.log(event);
             if (event.code === "Space") {
                 balls.forEach((ball, index) => {
                     ball.velocity.x = (Math.random()*50)+10
                     ball.velocity.y = (Math.random()*50)+10;
                 });
             } else if (event.key === 'n') {
-                let newBall = addBall(Math.random() * 100, Math.random() * 100);
-                newBall.velocity.x = Math.random() * 50;
-                newBall.velocity.y = Math.random() * 30;
+                let newBall = addBall(Math.random() * 500, Math.random() * 500, Math.random() * 25, Math.random() * 25);
             }
         });
     </script>
